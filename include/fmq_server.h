@@ -10,13 +10,13 @@
      * The XML model used for this code generation: fmq_server.xml, or
      * The code generation script that built this file: zproto_server_c
     ************************************************************************
-    Copyright (c) the Contributors as noted in the AUTHORS file.       
-    This file is part of FileMQ, a C implemenation of the protocol:    
-    https://github.com/danriegsecker/filemq2.                          
-                                                                       
+    Copyright (c) the Contributors as noted in the AUTHORS file.
+    This file is part of FileMQ, a C implemenation of the protocol:
+    https://github.com/danriegsecker/filemq2.
+
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.           
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -45,7 +45,7 @@ extern "C" {
 //      zstr_send (fmq_server, "VERBOSE");
 //
 //  Bind fmq_server to specified endpoint. TCP endpoints may specify
-//  the port number as "*" to aquire an ephemeral port:
+//  the port number as "*" to acquire an ephemeral port:
 //
 //      zstr_sendx (fmq_server, "BIND", endpoint, NULL);
 //
@@ -80,12 +80,14 @@ extern "C" {
 //
 //  This is the fmq_server constructor as a zactor_fn:
 //
+
 FILEMQ_EXPORT void
     fmq_server (zsock_t *pipe, void *args);
 
 //  Self test of this class
 FILEMQ_EXPORT void
     fmq_server_test (bool verbose);
+
 //  @end
 
 #ifdef __cplusplus

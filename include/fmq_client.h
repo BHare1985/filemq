@@ -10,13 +10,13 @@
      * The XML model used for this code generation: fmq_client.xml, or
      * The code generation script that built this file: zproto_client_c
     ************************************************************************
-    Copyright (c) the Contributors as noted in the AUTHORS file.       
-    This file is part of FileMQ, a C implemenation of the protocol:    
-    https://github.com/danriegsecker/filemq2.                          
-                                                                       
+    Copyright (c) the Contributors as noted in the AUTHORS file.
+    This file is part of FileMQ, a C implemenation of the protocol:
+    https://github.com/danriegsecker/filemq2.
+
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.           
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -64,25 +64,25 @@ FILEMQ_EXPORT zsock_t *
 FILEMQ_EXPORT bool
     fmq_client_connected (fmq_client_t *self);
 
-//  Connect to server endpoint, with specified timeout in msecs (zero means wait    
-//  forever). Connect succeeds if connection is successful.                         
+//  Connect to server endpoint, with specified timeout in msecs (zero means wait
+//  forever). Connect succeeds if connection is successful.
 //  Returns >= 0 if successful, -1 if interrupted.
-FILEMQ_EXPORT uint8_t 
+FILEMQ_EXPORT uint8_t
     fmq_client_connect (fmq_client_t *self, const char *endpoint, uint32_t timeout);
 
-//  Subscribe to a directory on the server, directory specified by path.            
+//  Subscribe to a directory on the server, directory specified by path.
 //  Returns >= 0 if successful, -1 if interrupted.
-FILEMQ_EXPORT uint8_t 
+FILEMQ_EXPORT uint8_t
     fmq_client_subscribe (fmq_client_t *self, const char *path);
 
-//  Tell the api where to store files. This should be done before subscribing to    
-//  anything.                                                                       
+//  Tell the api where to store files. This should be done before subscribing to
+//  anything.
 //  Returns >= 0 if successful, -1 if interrupted.
-FILEMQ_EXPORT uint8_t 
+FILEMQ_EXPORT uint8_t
     fmq_client_set_inbox (fmq_client_t *self, const char *path);
 
 //  Return last received status
-FILEMQ_EXPORT uint8_t 
+FILEMQ_EXPORT uint8_t
     fmq_client_status (fmq_client_t *self);
 
 //  Return last received reason
