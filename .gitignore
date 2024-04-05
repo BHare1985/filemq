@@ -1,4 +1,6 @@
-# Own created files
+# This is a skeleton created by zproject.
+# You can add hand-written code here.
+save.xml
 src/.cache
 src/filemq.lst
 src/fmq_selftest
@@ -6,7 +8,7 @@ src/fmq_sha.lst
 src/mymusic
 src/testit
 src/track
-   
+
 # Object files
 *.o
 *.so
@@ -36,6 +38,11 @@ src/filemq_selftest
 *.app
 core
 
+# Distcheck workspace and archives
+/filemq-*/
+/filemq-*.tar.gz
+/filemq-*.zip
+
 # Man pages
 doc/*.1
 doc/*.3
@@ -55,6 +62,7 @@ config.log
 config.status
 config/
 configure
+configure.lineno
 libtool
 src/platform.h
 src/platform.h.in
@@ -68,8 +76,31 @@ CMakeCache.txt
 CMakeFiles/
 CTestTestfile.cmake
 cmake_install.cmake
+compile_commands.json
+DartConfiguration.tcl
 install_manifest.txt
 Testing/
+
+# Repositories downloaded by CI integration scripts
+tmp-deps/
+
+# Travis build area
+tmp/
+
+# Valgrind files
+callgrind*
+vgcore*
+
+# Vagrant files
+.vagrant
+
+# CLion / PyCharm
+.idea
+
+# GYP files
+project.Makefile
+*.target.mk
+out/
 
 # Android build results
 builds/android/prefix
@@ -80,9 +111,30 @@ src/app/gen/
 src/app/obj/
 src/app/local.properties
 
-# Android -dependencies
+# Android - dependencies
 src/app/jni/output
+
+# Python build directory
+build/
+
+# MSVC build directories
+obj/
+bin/
+*.tlog
+
+# Qt
+*pro.user
+moc_*
+build-*
+bindings/qt/selftest/selftest
 
 # Temporary files
 *.swp
+*.bak
+.test*
+
+# Netbeans directory
+nbproject/
+
+# editor backups
 *~
