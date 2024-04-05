@@ -1,21 +1,17 @@
-Format:         1.0
-Source:         filemq
-Version:        2.0.0-1
-Binary:         libfilemq2, filemq-dev
-Architecture:   any all
-Maintainer:     John Doe <John.Doe@example.com>
-Standards-Version: 3.9.5
-Build-Depends: bison, debhelper (>= 8),
+Format: 3.0 (quilt)
+Binary: filemq
+Source: filemq
+Version: 2.0.0-0.1
+Maintainer: filemq Developers <email@hostname.com>
+Architecture: any
+Build-Depends: debhelper (>= 9),
     pkg-config,
-    automake,
-    autoconf,
-    libtool,
-    libsodium-dev,
-    libzmq4-dev,
+    libzmq3-dev,
     libczmq-dev,
+    dh-python <!nopython>,
+    python3-all-dev <!nopython>, python3-cffi <!nopython>, python3-setuptools <!nopython>,
+    asciidoc-base | asciidoc, xmlto,
     dh-autoreconf
 
-Package-List:
- libfilemq2 deb net optional arch=any
- filemq-dev deb libdevel optional arch=any
-
+Files:
+ 7697688bf65a35bc33ae2db51ebb0e3b 818110 filemq.tar.gz

@@ -1,0 +1,3 @@
+usr/include/*
+usr/lib/*/libfilemq.so
+usr/lib/*/pkgconfig/libfilemq.pc

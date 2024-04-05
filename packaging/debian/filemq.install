@@ -1,4 +1,3 @@
-debian/tmp/usr/bin/filemq_server
-debian/tmp/usr/bin/filemq_client
-
+usr/bin/filemq_server
+usr/bin/filemq_client
 
