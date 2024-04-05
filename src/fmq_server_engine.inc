@@ -10,16 +10,21 @@
      * The XML model used for this code generation: fmq_server.xml, or
      * The code generation script that built this file: zproto_server_c
     ************************************************************************
-    Copyright (c) the Contributors as noted in the AUTHORS file.       
-    This file is part of FileMQ, a C implemenation of the protocol:    
-    https://github.com/danriegsecker/filemq2.                          
-                                                                       
+    Copyright (c) the Contributors as noted in the AUTHORS file.
+    This file is part of FileMQ, a C implemenation of the protocol:
+    https://github.com/danriegsecker/filemq2.
+
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.           
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
+#define ZPROTO_UNUSED(object) (void)object
 
 //  ---------------------------------------------------------------------------
 //  State machine constants
@@ -48,7 +53,7 @@ typedef enum {
 } event_t;
 
 //  Names for state machine logging and error reporting
-static char *
+static const char *
 s_state_name [] = {
     "(NONE)",
     "start",
@@ -57,7 +62,7 @@ s_state_name [] = {
     "defaults"
 };
 
-static char *
+static const char *
 s_event_name [] = {
     "(NONE)",
     "terminate",
@@ -803,6 +808,8 @@ s_client_handle_ticket (zloop_t *loop, int timer_id, void *argument)
 static int
 s_client_handle_wakeup (zloop_t *loop, int timer_id, void *argument)
 {
+    ZPROTO_UNUSED(loop);
+    ZPROTO_UNUSED(timer_id);
     s_client_t *self = (s_client_t *) argument;
     s_client_execute (self, self->wakeup_event);
     return 0;
@@ -818,17 +825,17 @@ s_server_config_global (s_server_t *self)
     //
     //  If we didn't already set verbose, check if the config tree wants it
     if (!self->verbose
-    && atoi (zconfig_resolve (self->config, "server/verbose", "0")))
+    && atoi (zconfig_get (self->config, "server/verbose", "0")))
         self->verbose = true;
 
     //  Default client timeout is 60 seconds
     self->timeout = atoi (
-        zconfig_resolve (self->config, "server/timeout", "60000"));
+        zconfig_get (self->config, "server/timeout", "60000"));
     zloop_set_ticket_delay (self->loop, self->timeout);
 
     //  Do we want to run server in the background?
     int background = atoi (
-        zconfig_resolve (self->config, "server/background", "0"));
+        zconfig_get (self->config, "server/background", "0"));
     if (!background)
         zsys_set_logstream (stdout);
 }
@@ -902,19 +909,20 @@ s_server_config_service (s_server_t *self)
             zsys_notice ("%s", zconfig_value (section));
         else
         if (streq (zconfig_name (section), "bind")) {
-            char *endpoint = zconfig_resolve (section, "endpoint", "?");
-            if (zsock_bind (self->router, "%s", endpoint) == -1)
+            char *endpoint = zconfig_get (section, "endpoint", "?");
+            self->port = zsock_bind (self->router, "%s", endpoint);
+            if (self->port == -1)
                 zsys_warning ("could not bind to %s (%s)", endpoint, zmq_strerror (zmq_errno ()));
         }
 #if (ZMQ_VERSION_MAJOR >= 4)
         else
         if (streq (zconfig_name (section), "security")) {
-            char *mechanism = zconfig_resolve (section, "mechanism", "null");
-            char *domain = zconfig_resolve (section, "domain", NULL);
+            char *mechanism = zconfig_get (section, "mechanism", "null");
+            char *domain = zconfig_get (section, "domain", NULL);
+            if (domain)
+                zsock_set_zap_domain (self->router, domain);
             if (streq (mechanism, "null")) {
                 zsys_notice ("server is using NULL security");
-                if (domain)
-                    zsock_set_zap_domain (self->router, NULL);
             }
             else
             if (streq (mechanism, "plain")) {
@@ -935,6 +943,9 @@ s_server_config_service (s_server_t *self)
 static int
 s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
 {
+    ZPROTO_UNUSED(loop);
+    ZPROTO_UNUSED(reader);
+
     s_server_t *self = (s_server_t *) argument;
     zmsg_t *msg = zmsg_recv (self->pipe);
     if (!msg)
@@ -948,7 +959,7 @@ s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
     else
     if (streq (method, "$TERM")) {
         //  Shutdown the engine
-        free (method);
+        zstr_free (&method);
         zmsg_destroy (&msg);
         return -1;
     }
@@ -959,7 +970,7 @@ s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
         self->port = zsock_bind (self->router, "%s", endpoint);
         if (self->port == -1)
             zsys_warning ("could not bind to %s", endpoint);
-        free (endpoint);
+        zstr_free (&endpoint);
     }
     else
     if (streq (method, "PORT")) {
@@ -980,7 +991,7 @@ s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
             zsys_warning ("cannot load config file '%s'", filename);
             self->config = zconfig_new ("root", NULL);
         }
-        free (filename);
+        zstr_free (&filename);
     }
     else
     if (streq (method, "SET")) {
@@ -992,15 +1003,15 @@ s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
             self->verbose = (atoi (value) == 1);
         }
         s_server_config_global (self);
-        free (path);
-        free (value);
+        zstr_free (&value);
+        zstr_free (&path);
     }
     else
     if (streq (method, "SAVE")) {
         char *filename = zmsg_popstr (msg);
         if (zconfig_save (self->config, filename))
             zsys_warning ("cannot save config file '%s'", filename);
-        free (filename);
+        zstr_free (&filename);
     }
     else {
         //  Execute custom method
@@ -1008,7 +1019,7 @@ s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
         //  If reply isn't null, send it to caller
         zmsg_send (&reply, self->pipe);
     }
-    free (method);
+    zstr_free (&method);
     zmsg_destroy (&msg);
     return 0;
 }
@@ -1018,12 +1029,17 @@ s_server_handle_pipe (zloop_t *loop, zsock_t *reader, void *argument)
 static int
 s_server_handle_protocol (zloop_t *loop, zsock_t *reader, void *argument)
 {
+    ZPROTO_UNUSED(loop);
+    ZPROTO_UNUSED(reader);
+
     s_server_t *self = (s_server_t *) argument;
     //  We process as many messages as we can, to reduce the overhead
     //  of polling and the reactor:
     while (zsock_events (self->router) & ZMQ_POLLIN) {
-        if (fmq_msg_recv (self->message, self->router))
+        int rc = fmq_msg_recv (self->message, self->router);
+        if (rc == -1)
             return -1;      //  Interrupted; exit zloop
+
 
         //  TODO: use binary hashing on routing_id
         char *hashkey = zframe_strhex (fmq_msg_routing_id (self->message));
@@ -1049,6 +1065,9 @@ s_server_handle_protocol (zloop_t *loop, zsock_t *reader, void *argument)
 static int
 s_watch_server_config (zloop_t *loop, int timer_id, void *argument)
 {
+    ZPROTO_UNUSED(loop);
+    ZPROTO_UNUSED(timer_id);
+
     s_server_t *self = (s_server_t *) argument;
     if (zconfig_has_changed (self->config)
     &&  zconfig_reload (&self->config) == 0) {
@@ -1073,7 +1092,7 @@ fmq_server (zsock_t *pipe, void *args)
     assert (self);
     zsock_signal (pipe, 0);
     //  Actor argument may be a string used for logging
-    self->log_prefix = args? (char *) args: "";
+    self->log_prefix = args? (char *) args: (char*)"";
 
     //  Set-up server monitor to watch for config file changes
     engine_set_monitor ((server_t *) self, 1000, s_watch_server_config);

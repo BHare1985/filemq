@@ -10,13 +10,13 @@
      * The XML model used for this code generation: fmq_client.xml, or
      * The code generation script that built this file: zproto_client_c
     ************************************************************************
-    Copyright (c) the Contributors as noted in the AUTHORS file.       
-    This file is part of FileMQ, a C implemenation of the protocol:    
-    https://github.com/danriegsecker/filemq2.                          
-                                                                       
+    Copyright (c) the Contributors as noted in the AUTHORS file.
+    This file is part of FileMQ, a C implemenation of the protocol:
+    https://github.com/danriegsecker/filemq2.
+
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.           
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -55,7 +55,7 @@ typedef enum {
 } event_t;
 
 //  Names for state machine logging and error reporting
-static char *
+static const char *
 s_state_name [] = {
     "(NONE)",
     "start",
@@ -66,7 +66,7 @@ s_state_name [] = {
     "defaults"
 };
 
-static char *
+static const char *
 s_event_name [] = {
     "(NONE)",
     "connect",
@@ -302,7 +302,7 @@ engine_set_heartbeat (client_t *client, size_t heartbeat)
 
 
 //  Set expiry timer. Setting a non-zero expiry causes the state machine
-//  to receive an "expired" event if is no incoming traffic for that many
+//  to receive an "expired" event if there is no incoming traffic for that many
 //  milliseconds. This cycles over and over until/unless the code sets a
 //  zero expiry. The state machine must handle the "expired" event.
 
@@ -1447,9 +1447,9 @@ fmq_client_new (void)
 
 //  ---------------------------------------------------------------------------
 //  Destroy the fmq_client
-//  Disconnect from server.                                                         
+//  Disconnect from server.
 
-static uint8_t 
+static uint8_t
 fmq_client_destructor (fmq_client_t *self);
 
 void
@@ -1523,7 +1523,7 @@ fmq_client_connected (fmq_client_t *self)
 //  Get valid reply from actor; discard replies that does not match. Current
 //  implementation filters on first frame of message. Blocks until a valid
 //  reply is received, and properties can be loaded from it. Returns 0 if
-//  matched, -1 if interrupted or timed-out.
+//  matched, -1 if interrupted.
 
 static int
 s_accept_reply (fmq_client_t *self, ...)
@@ -1532,7 +1532,7 @@ s_accept_reply (fmq_client_t *self, ...)
     while (!zsys_interrupted) {
         char *reply = zstr_recv (self->actor);
         if (!reply)
-            break;              //  Interrupted or timed-out
+            break;              //  Interrupted
 
         va_list args;
         va_start (args, self);
@@ -1554,21 +1554,21 @@ s_accept_reply (fmq_client_t *self, ...)
         va_end (args);
         //  If anything was remaining on pipe, flush it
         zsock_flush (self->actor);
+        zstr_free (&reply);
         if (filter) {
-            zstr_free (&reply);
             return 0;           //  We matched one of the filters
         }
     }
-    return -1;          //  Interrupted or timed-out
+    return -1;          //  Interrupted
 }
 
 
 //  ---------------------------------------------------------------------------
-//  Connect to server endpoint, with specified timeout in msecs (zero means wait    
-//  forever). Connect succeeds if connection is successful.                         
+//  Connect to server endpoint, with specified timeout in msecs (zero means wait
+//  forever). Connect succeeds if connection is successful.
 //  Returns >= 0 if successful, -1 if interrupted.
 
-uint8_t 
+uint8_t
 fmq_client_connect (fmq_client_t *self, const char *endpoint, uint32_t timeout)
 {
     assert (self);
@@ -1581,10 +1581,10 @@ fmq_client_connect (fmq_client_t *self, const char *endpoint, uint32_t timeout)
 
 
 //  ---------------------------------------------------------------------------
-//  Disconnect from server.                                                         
+//  Disconnect from server.
 //  Returns >= 0 if successful, -1 if interrupted.
 
-uint8_t 
+uint8_t
 fmq_client_destructor (fmq_client_t *self)
 {
     assert (self);
@@ -1597,10 +1597,10 @@ fmq_client_destructor (fmq_client_t *self)
 
 
 //  ---------------------------------------------------------------------------
-//  Subscribe to a directory on the server, directory specified by path.            
+//  Subscribe to a directory on the server, directory specified by path.
 //  Returns >= 0 if successful, -1 if interrupted.
 
-uint8_t 
+uint8_t
 fmq_client_subscribe (fmq_client_t *self, const char *path)
 {
     assert (self);
@@ -1613,11 +1613,11 @@ fmq_client_subscribe (fmq_client_t *self, const char *path)
 
 
 //  ---------------------------------------------------------------------------
-//  Tell the api where to store files. This should be done before subscribing to    
-//  anything.                                                                       
+//  Tell the api where to store files. This should be done before subscribing to
+//  anything.
 //  Returns >= 0 if successful, -1 if interrupted.
 
-uint8_t 
+uint8_t
 fmq_client_set_inbox (fmq_client_t *self, const char *path)
 {
     assert (self);
@@ -1632,7 +1632,7 @@ fmq_client_set_inbox (fmq_client_t *self, const char *path)
 //  ---------------------------------------------------------------------------
 //  Return last received status
 
-uint8_t 
+uint8_t
 fmq_client_status (fmq_client_t *self)
 {
     assert (self);

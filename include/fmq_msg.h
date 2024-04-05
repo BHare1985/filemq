@@ -12,13 +12,13 @@
      * The XML model used for this code generation: fmq_msg.xml, or
      * The code generation script that built this file: zproto_codec_c
     ************************************************************************
-    Copyright (c) the Contributors as noted in the AUTHORS file.       
-    This file is part of FileMQ, a C implemenation of the protocol:    
-    https://github.com/danriegsecker/filemq2.                          
-                                                                       
+    Copyright (c) the Contributors as noted in the AUTHORS file.
+    This file is part of FileMQ, a C implemenation of the protocol:
+    https://github.com/danriegsecker/filemq2.
+
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.           
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -95,11 +95,11 @@ typedef struct _fmq_msg_t fmq_msg_t;
 #endif
 
 //  @interface
-//  Create a new empty fmq_msg
 fmq_msg_t *
+//  Create a new empty fmq_msg
     fmq_msg_new (void);
 
-//  Destroy a fmq_msg instance
+//  Destroy the fmq_msg
 void
     fmq_msg_destroy (fmq_msg_t **self_p);
 

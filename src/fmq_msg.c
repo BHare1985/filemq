@@ -12,13 +12,13 @@
      * The XML model used for this code generation: fmq_msg.xml, or
      * The code generation script that built this file: zproto_codec_c
     ************************************************************************
-    Copyright (c) the Contributors as noted in the AUTHORS file.       
-    This file is part of FileMQ, a C implemenation of the protocol:    
-    https://github.com/danriegsecker/filemq2.                          
-                                                                       
+    Copyright (c) the Contributors as noted in the AUTHORS file.
+    This file is part of FileMQ, a C implemenation of the protocol:
+    https://github.com/danriegsecker/filemq2.
+
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.           
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -28,6 +28,10 @@
 @discuss
 @end
 */
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 
 #include "../include/fmq_msg.h"
 
@@ -76,7 +80,7 @@ struct _fmq_msg_t {
 
 //  Put a 1-byte number to the frame
 #define PUT_NUMBER1(host) { \
-    *(byte *) self->needle = (host); \
+    *(byte *) self->needle = (byte) (host); \
     self->needle++; \
 }
 
@@ -309,6 +313,7 @@ fmq_msg_recv (fmq_msg_t *self, zsock_t *input)
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
+                zhash_destroy (&self->options);
                 self->options = zhash_new ();
                 zhash_autofree (self->options);
                 while (hash_size--) {
@@ -323,6 +328,7 @@ fmq_msg_recv (fmq_msg_t *self, zsock_t *input)
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
+                zhash_destroy (&self->cache);
                 self->cache = zhash_new ();
                 zhash_autofree (self->cache);
                 while (hash_size--) {
@@ -353,6 +359,7 @@ fmq_msg_recv (fmq_msg_t *self, zsock_t *input)
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
+                zhash_destroy (&self->headers);
                 self->headers = zhash_new ();
                 zhash_autofree (self->headers);
                 while (hash_size--) {
@@ -424,6 +431,7 @@ fmq_msg_send (fmq_msg_t *self, zsock_t *output)
         zframe_send (&self->routing_id, output, ZFRAME_MORE + ZFRAME_REUSE);
 
     size_t frame_size = 2 + 1;          //  Signature and message ID
+
     switch (self->id) {
         case FMQ_MSG_OHAI:
             frame_size += 1 + strlen ("FILEMQ");
@@ -490,10 +498,12 @@ fmq_msg_send (fmq_msg_t *self, zsock_t *output)
             frame_size += 1 + strlen (self->reason);
             break;
     }
-    //  Now serialize message into the frame
+
     zmq_msg_t frame;
     zmq_msg_init_size (&frame, frame_size);
     self->needle = (byte *) zmq_msg_data (&frame);
+
+    //  Now serialize message into the frame
     PUT_NUMBER2 (0xAAA0 | 3);
     PUT_NUMBER1 (self->id);
     size_t nbr_frames = 1;              //  Total number of frames to send
@@ -580,6 +590,7 @@ fmq_msg_send (fmq_msg_t *self, zsock_t *output)
             break;
 
     }
+
     //  Now send the data frame
     zmq_msg_send (&frame, zsock_resolve (output), --nbr_frames? ZMQ_SNDMORE: 0);
 
@@ -771,6 +782,7 @@ fmq_msg_command (fmq_msg_t *self)
     }
     return "?";
 }
+
 
 //  --------------------------------------------------------------------------
 //  Get/set the path field
@@ -1058,12 +1070,25 @@ fmq_msg_set_reason (fmq_msg_t *self, const char *value)
 
 
 //  --------------------------------------------------------------------------
-//  Selftest
+//  Self test of this class
+
+// If your selftest reads SCMed fixture data, please keep it in
+// src/selftest-ro; if your test creates filesystem objects, please
+// do so under src/selftest-rw.
+// The following pattern is suggested for C selftest code:
+//    char *filename = NULL;
+//    filename = zsys_sprintf ("%s/%s", SELFTEST_DIR_RO, "mytemplate.file");
+//    assert (filename);
+//    ... use the "filename" for I/O ...
+//    zstr_free (&filename);
+// This way the same "filename" variable can be reused for many subtests.
+#define SELFTEST_DIR_RO "src/selftest-ro"
+#define SELFTEST_DIR_RW "src/selftest-rw"
 
 void
 fmq_msg_test (bool verbose)
 {
-    printf (" * fmq_msg:");
+    printf (" * fmq_msg: ");
 
     if (verbose)
         printf ("\n");
@@ -1110,13 +1135,12 @@ fmq_msg_test (bool verbose)
         assert (fmq_msg_routing_id (self));
     }
     fmq_msg_set_id (self, FMQ_MSG_ICANHAZ);
-
     fmq_msg_set_path (self, "Life is short but Now lasts for ever");
     zhash_t *icanhaz_options = zhash_new ();
-    zhash_insert (icanhaz_options, "Name", "Brutus");
+    zhash_insert (icanhaz_options, "Name", (void*)"Brutus");
     fmq_msg_set_options (self, &icanhaz_options);
     zhash_t *icanhaz_cache = zhash_new ();
-    zhash_insert (icanhaz_cache, "Name", "Brutus");
+    zhash_insert (icanhaz_cache, "Name", (void*)"Brutus");
     fmq_msg_set_cache (self, &icanhaz_cache);
     //  Send twice
     fmq_msg_send (self, output);
@@ -1127,6 +1151,7 @@ fmq_msg_test (bool verbose)
         assert (fmq_msg_routing_id (self));
         assert (streq (fmq_msg_path (self), "Life is short but Now lasts for ever"));
         zhash_t *options = fmq_msg_get_options (self);
+        // Order of values is not guaranted
         assert (zhash_size (options) == 1);
         assert (streq ((char *) zhash_first (options), "Brutus"));
         assert (streq ((char *) zhash_cursor (options), "Name"));
@@ -1134,6 +1159,7 @@ fmq_msg_test (bool verbose)
         if (instance == 1)
             zhash_destroy (&icanhaz_options);
         zhash_t *cache = fmq_msg_get_cache (self);
+        // Order of values is not guaranted
         assert (zhash_size (cache) == 1);
         assert (streq ((char *) zhash_first (cache), "Brutus"));
         assert (streq ((char *) zhash_cursor (cache), "Name"));
@@ -1152,7 +1178,6 @@ fmq_msg_test (bool verbose)
         assert (fmq_msg_routing_id (self));
     }
     fmq_msg_set_id (self, FMQ_MSG_NOM);
-
     fmq_msg_set_credit (self, 123);
     fmq_msg_set_sequence (self, 123);
     //  Send twice
@@ -1166,14 +1191,13 @@ fmq_msg_test (bool verbose)
         assert (fmq_msg_sequence (self) == 123);
     }
     fmq_msg_set_id (self, FMQ_MSG_CHEEZBURGER);
-
     fmq_msg_set_sequence (self, 123);
     fmq_msg_set_operation (self, 123);
     fmq_msg_set_filename (self, "Life is short but Now lasts for ever");
     fmq_msg_set_offset (self, 123);
     fmq_msg_set_eof (self, 123);
     zhash_t *cheezburger_headers = zhash_new ();
-    zhash_insert (cheezburger_headers, "Name", "Brutus");
+    zhash_insert (cheezburger_headers, "Name", (void*)"Brutus");
     fmq_msg_set_headers (self, &cheezburger_headers);
     zchunk_t *cheezburger_chunk = zchunk_new ("Captcha Diem", 12);
     fmq_msg_set_chunk (self, &cheezburger_chunk);
@@ -1190,6 +1214,7 @@ fmq_msg_test (bool verbose)
         assert (fmq_msg_offset (self) == 123);
         assert (fmq_msg_eof (self) == 123);
         zhash_t *headers = fmq_msg_get_headers (self);
+        // Order of values is not guaranted
         assert (zhash_size (headers) == 1);
         assert (streq ((char *) zhash_first (headers), "Brutus"));
         assert (streq ((char *) zhash_cursor (headers), "Name"));
@@ -1231,7 +1256,6 @@ fmq_msg_test (bool verbose)
         assert (fmq_msg_routing_id (self));
     }
     fmq_msg_set_id (self, FMQ_MSG_SRSLY);
-
     fmq_msg_set_reason (self, "Life is short but Now lasts for ever");
     //  Send twice
     fmq_msg_send (self, output);
@@ -1243,7 +1267,6 @@ fmq_msg_test (bool verbose)
         assert (streq (fmq_msg_reason (self), "Life is short but Now lasts for ever"));
     }
     fmq_msg_set_id (self, FMQ_MSG_RTFM);
-
     fmq_msg_set_reason (self, "Life is short but Now lasts for ever");
     //  Send twice
     fmq_msg_send (self, output);
@@ -1258,6 +1281,9 @@ fmq_msg_test (bool verbose)
     fmq_msg_destroy (&self);
     zsock_destroy (&input);
     zsock_destroy (&output);
+#if defined (__WINDOWS__)
+    zsys_shutdown();
+#endif
     //  @end
 
     printf ("OK\n");
